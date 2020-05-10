@@ -3,12 +3,16 @@ package pl.coderslab;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
+
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Scanner;
 
 public class TaskManager {
@@ -48,9 +52,9 @@ public class TaskManager {
                 System.exit(0);
             }
         } else {
-            try {
-                for (String line : Files.readAllLines(path)) {
-                    tabel = ArrayUtils.add(tabel, line.split(","));
+            try (Scanner scannerFile = new Scanner(path)) {
+                while (scannerFile.hasNextLine()) {
+                    tabel = ArrayUtils.add(tabel, scannerFile.nextLine().split(","));
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -71,7 +75,7 @@ public class TaskManager {
                     add();
                     break;
                 case "remove":
-                    tab=remove(tab);
+                    tab = remove(tab);
                     break;
                 case "list":
                     list(tab);
@@ -89,10 +93,34 @@ public class TaskManager {
         System.out.println("Please add task description.");
         line[0] = consoleScan.nextLine();
         System.out.println("Please add task due date (YYYY-MM-DD).");
-        line[1] = consoleScan.next();
+        line[1] = consoleScan.nextLine();
+        while (!validateJavaDate(line[1])) {
+            System.out.println("Please enter the task due date in the format: YYYY-MM-DD");
+            line[1] = consoleScan.next();
+        }
         System.out.println("Is your task important (" + ConsoleColors.RED + "true" + ConsoleColors.RESET + "/" + ConsoleColors.RED + "false" + ConsoleColors.RESET + ")?");
         line[2] = consoleScan.next();
+        while (!Boolean.parseBoolean(line[2])){
+            System.out.println("Please enter "+ ConsoleColors.RED + "true" + ConsoleColors.RESET + " or " + ConsoleColors.RED + "false" + ConsoleColors.RESET + ".");
+            line[2] = consoleScan.next();
+        }
         tab = ArrayUtils.add(tab, line);
+    }
+
+    public static boolean validateJavaDate(String strDate) {
+        if (strDate.trim().equals("")) {
+            return false;
+        } else {
+            SimpleDateFormat sdfrmt = new SimpleDateFormat("yyyy-MM-dd");
+            sdfrmt.setLenient(false);
+            try {
+                Date javaDate = sdfrmt.parse(strDate);
+            } catch (ParseException e) {
+                System.out.println(strDate + " is Invalid Date format");
+                return false;
+            }
+            return true;
+        }
     }
 
     public static void list(String[][] tabel) {
@@ -127,7 +155,7 @@ public class TaskManager {
     }
 
     public static void saveTabToFile(Path path, String[][] tab) {
-        try (FileWriter fileWriter = new FileWriter(String.valueOf(path))) {
+        try (FileWriter fileWriter = new FileWriter(String.valueOf(path));) {
             for (int i = 0; i < tab.length; i++) {
                 fileWriter.append(StringUtils.join(tab[i], ",") + "\n");
             }
